@@ -19,7 +19,7 @@ const ProductList = () => {
   };
 
   const handleDelete = async (id) => {
-    Swal.fire({
+    const result = await Swal.fire({
       title: "คุณแน่ใจหรือไม่?",
       text: "หากลบแล้วจะไม่สามารถกู้คืนได้!",
       icon: "warning",
@@ -28,46 +28,79 @@ const ProductList = () => {
       cancelButtonColor: "#3085d6",
       confirmButtonText: "ลบสินค้า",
       cancelButtonText: "ยกเลิก"
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          await axios.delete(`http://localhost:3001/Product/${id}`);
-          Swal.fire("ลบสำเร็จ!", "สินค้าถูกลบเรียบร้อย", "success");
-          fetchProducts();
-        } catch (error) {
-          Swal.fire("เกิดข้อผิดพลาด!", "ไม่สามารถลบสินค้าได้", "error");
-          console.error("Error deleting:", error);
-        }
-      }
     });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`http://localhost:3001/Product/${id}`);
+        Swal.fire("ลบสำเร็จ!", "สินค้าถูกลบเรียบร้อย", "success");
+        fetchProducts();
+      } catch (error) {
+        Swal.fire("เกิดข้อผิดพลาด!", "ไม่สามารถลบสินค้าได้", "error");
+        console.error("Error deleting:", error);
+      }
+    }
   };
 
-  const handleEdit = (product) => {
-    Swal.fire({
+  const handleEdit = async (product) => {
+    let selectedFile = null;
+
+    const { value: formValues } = await Swal.fire({
       title: 'แก้ไขสินค้า',
       html: `
-        <input id="swal-input1" class="swal2-input" placeholder="ชื่อสินค้า" value="${product.title}">
-        <input id="swal-input2" class="swal2-input" placeholder="ราคา" type="number" value="${product.price}">
+        <input id="swal-title" class="swal2-input" placeholder="ชื่อสินค้า" value="${product.title}">
+        <input id="swal-price" class="swal2-input" placeholder="ราคา" type="number" value="${product.price}">
+        <input id="swal-quantity" class="swal2-input" placeholder="จำนวนสินค้าในสต็อก" type="number" value="${product.quantity}">
+        <input id="swal-picture" type="file" class="swal2-file">
+        <img id="swal-preview" src="${product.picture}" class="w-24 h-24 mt-2 rounded" style="display:block; margin:auto;">
       `,
-      preConfirm: async () => {
-        const title = document.getElementById('swal-input1').value;
-        const price = parseFloat(document.getElementById('swal-input2').value);
-        
-        if (!title || isNaN(price)) {
-          Swal.showValidationMessage('กรุณากรอกข้อมูลให้ครบถ้วน');
-          return false;
-        }
+      didOpen: () => {
+        const fileInput = document.getElementById('swal-picture');
+        const preview = document.getElementById('swal-preview');
 
-        try {
-          await axios.put(`http://localhost:3001/Product/${product.id}`, { title, price });
-          Swal.fire("สำเร็จ!", "สินค้าได้รับการอัปเดต", "success");
-          fetchProducts();
-        } catch (error) {
-          Swal.fire("เกิดข้อผิดพลาด!", "ไม่สามารถแก้ไขสินค้าได้", "error");
-          console.error('Error updating product:', error);
-        }
+        fileInput.addEventListener('change', (event) => {
+          const file = event.target.files[0];
+          if (file) {
+            selectedFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => (preview.src = e.target.result);
+            reader.readAsDataURL(file);
+          }
+        });
+      },
+      preConfirm: () => {
+        return {
+          title: document.getElementById('swal-title').value,
+          price: parseFloat(document.getElementById('swal-price').value) || 0,
+          quantity: parseInt(document.getElementById('swal-quantity').value) || 0,
+          file: selectedFile
+        };
       }
     });
+
+    if (!formValues || !formValues.title || isNaN(formValues.price) || isNaN(formValues.quantity)) {
+      Swal.fire("เกิดข้อผิดพลาด!", "กรุณากรอกข้อมูลให้ครบถ้วน", "error");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("title", formValues.title);
+    formData.append("price", formValues.price);
+    formData.append("quantity", formValues.quantity);
+    if (formValues.file) {
+      formData.append("picture", formValues.file);
+    }
+
+    try {
+      await axios.put(`http://localhost:3001/Product/${product.id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      Swal.fire("สำเร็จ!", "สินค้าได้รับการอัปเดต", "success");
+      fetchProducts();
+    } catch (error) {
+      Swal.fire("เกิดข้อผิดพลาด!", "ไม่สามารถแก้ไขสินค้าได้", "error");
+      console.error('Error updating product:', error);
+    }
   };
 
   return (
@@ -80,24 +113,26 @@ const ProductList = () => {
             <th className="border px-4 py-2">รหัส</th>
             <th className="border px-4 py-2">ชื่อสินค้า</th>
             <th className="border px-4 py-2">ราคา</th>
+            <th className="border px-4 py-2">จำนวนในสต็อก</th>
             <th className="border px-4 py-2">ขายไปแล้ว</th>
             <th className="border px-4 py-2">การจัดการ</th>
           </tr>
         </thead>
         <tbody>
           {products.length === 0 ? (
-            <tr><td colSpan="6" className="text-center py-4">ยังไม่มีสินค้าบนระบบ</td></tr>
+            <tr><td colSpan="7" className="text-center py-4">ยังไม่มีสินค้าบนระบบ</td></tr>
           ) : (
             products.map((product, index) => (
               <tr key={product.id} className="border-b hover:bg-gray-100">
                 <td className="border px-4 py-2 text-center">
                   {product.picture ? (
-                    <img src={`data:image/png;base64,${product.picture}`} alt={product.title} className="w-20 h-20 object-cover rounded-lg" />
+                    <img src={product.picture} alt={product.title} className="w-20 h-20 object-cover rounded-lg" />
                   ) : <span>ไม่มีรูป</span>}
                 </td>
                 <td className="border px-4 py-2 text-center">{index + 1}</td>
                 <td className="border px-4 py-2">{product.title}</td>
                 <td className="border px-4 py-2 text-center">฿{product.price}</td>
+                <td className="border px-4 py-2 text-center">{product.quantity} ชิ้น</td>
                 <td className="border px-4 py-2 text-center">{product.sold || 0} ชิ้น</td>
                 <td className="border px-4 py-2 text-center">
                   <button onClick={() => handleEdit(product)} className="bg-yellow-500 text-white px-3 py-1 rounded mr-2">แก้ไข</button>
