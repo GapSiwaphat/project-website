@@ -44,11 +44,12 @@ const ProductList = () => {
 
   const handleEdit = async (product) => {
     let selectedFile = null;
-
+  
     const { value: formValues } = await Swal.fire({
       title: 'แก้ไขสินค้า',
       html: `
         <input id="swal-title" class="swal2-input" placeholder="ชื่อสินค้า" value="${product.title}">
+        <input id="swal-description" class="swal2-input" placeholder="รายละเอียดสินค้า" value="${product.description || ""}">
         <input id="swal-price" class="swal2-input" placeholder="ราคา" type="number" value="${product.price}">
         <input id="swal-quantity" class="swal2-input" placeholder="จำนวนสินค้าในสต็อก" type="number" value="${product.quantity}">
         <input id="swal-picture" type="file" class="swal2-file">
@@ -57,7 +58,7 @@ const ProductList = () => {
       didOpen: () => {
         const fileInput = document.getElementById('swal-picture');
         const preview = document.getElementById('swal-preview');
-
+  
         fileInput.addEventListener('change', (event) => {
           const file = event.target.files[0];
           if (file) {
@@ -71,26 +72,34 @@ const ProductList = () => {
       preConfirm: () => {
         return {
           title: document.getElementById('swal-title').value,
+          description: document.getElementById('swal-description').value,
           price: parseFloat(document.getElementById('swal-price').value) || 0,
           quantity: parseInt(document.getElementById('swal-quantity').value) || 0,
           file: selectedFile
         };
       }
     });
-
+  
     if (!formValues || !formValues.title || isNaN(formValues.price) || isNaN(formValues.quantity)) {
       Swal.fire("เกิดข้อผิดพลาด!", "กรุณากรอกข้อมูลให้ครบถ้วน", "error");
       return;
     }
-
+  
     const formData = new FormData();
     formData.append("title", formValues.title);
+    formData.append("description", formValues.description);
     formData.append("price", formValues.price);
     formData.append("quantity", formValues.quantity);
     if (formValues.file) {
       formData.append("picture", formValues.file);
     }
-
+  
+    // ✅ Debug: ตรวจสอบค่าที่ถูกส่งไป Backend
+    console.log("🟢 FormData Content:");
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ':', pair[1]);
+    }
+  
     try {
       await axios.put(`http://localhost:3001/Product/${product.id}`, formData, {
         headers: { "Content-Type": "multipart/form-data" }
@@ -99,10 +108,10 @@ const ProductList = () => {
       fetchProducts();
     } catch (error) {
       Swal.fire("เกิดข้อผิดพลาด!", "ไม่สามารถแก้ไขสินค้าได้", "error");
-      console.error('Error updating product:', error);
+      console.error('❌ Error updating product:', error);
     }
-  };
-
+  };  
+  
   return (
     <div className="max-w-screen-xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-xl">
       <h2 className="text-2xl font-bold mb-6 text-center">รายการสินค้า</h2>
@@ -112,6 +121,7 @@ const ProductList = () => {
             <th className="border px-4 py-2">รูป</th>
             <th className="border px-4 py-2">รหัส</th>
             <th className="border px-4 py-2">ชื่อสินค้า</th>
+            <th className="border px-4 py-2">รายละเอียด</th>
             <th className="border px-4 py-2">ราคา</th>
             <th className="border px-4 py-2">จำนวนในสต็อก</th>
             <th className="border px-4 py-2">ขายไปแล้ว</th>
@@ -120,7 +130,7 @@ const ProductList = () => {
         </thead>
         <tbody>
           {products.length === 0 ? (
-            <tr><td colSpan="7" className="text-center py-4">ยังไม่มีสินค้าบนระบบ</td></tr>
+            <tr><td colSpan="8" className="text-center py-4">ยังไม่มีสินค้าบนระบบ</td></tr>
           ) : (
             products.map((product, index) => (
               <tr key={product.id} className="border-b hover:bg-gray-100">
@@ -131,6 +141,7 @@ const ProductList = () => {
                 </td>
                 <td className="border px-4 py-2 text-center">{index + 1}</td>
                 <td className="border px-4 py-2">{product.title}</td>
+                <td className="border px-4 py-2">{product.description || "ไม่มีรายละเอียด"}</td>
                 <td className="border px-4 py-2 text-center">฿{product.price}</td>
                 <td className="border px-4 py-2 text-center">{product.quantity} ชิ้น</td>
                 <td className="border px-4 py-2 text-center">{product.sold || 0} ชิ้น</td>

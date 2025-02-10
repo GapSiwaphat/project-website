@@ -90,25 +90,37 @@ app.get('/Product', async (req, res) => {
 // อัปเดตสินค้า
 app.put('/Product/:id', upload.single('picture'), async (req, res) => {
   const { id } = req.params;
-  const { title, price, quantity } = req.body;
+  let { title, description, price, quantity } = req.body;
 
   try {
-    const [oldData] = await db.query("SELECT picture FROM Product WHERE id = ?", [id]);
-    const oldPicture = oldData.length ? oldData[0].picture : null;
-    const newPicture = req.file ? req.file.filename : oldPicture;
+    // ✅ Debug: ตรวจสอบค่าที่ส่งมาจาก Frontend
+    console.log("🟢 Received Data:", req.body);
 
-    // ตรวจสอบว่ามีค่า quantity มาหรือไม่ ถ้าไม่มีให้ใช้ค่าของเดิม
-    const [oldQuantityData] = await db.query("SELECT quantity FROM Product WHERE id = ?", [id]);
-    const oldQuantity = oldQuantityData.length ? oldQuantityData[0].quantity : 0;
-    const updatedQuantity = quantity !== undefined ? quantity : oldQuantity;
+    // ดึงข้อมูลเก่าจาก Database
+    const [oldData] = await db.query("SELECT picture, description, quantity FROM Product WHERE id = ?", [id]);
+    if (oldData.length === 0) return res.status(404).send("Product not found");
 
+    const oldPicture = oldData[0].picture;
+    const oldDescription = oldData[0].description;
+    const oldQuantity = oldData[0].quantity;
+
+    // ตรวจสอบค่าใหม่ ถ้าไม่ได้ส่งมาก็ใช้ค่าเก่า
+    const updatedPicture = req.file ? req.file.filename : oldPicture;
+    const updatedQuantity = quantity !== undefined ? parseInt(quantity, 10) : oldQuantity;
+    const updatedPrice = price !== undefined ? parseFloat(price) : oldData[0].price;
+    const updatedDescription = description !== undefined ? description : oldDescription;
+
+    console.log("✅ Updating Product:", { title, updatedDescription, updatedPrice, updatedQuantity, updatedPicture });
+
+    // อัปเดตข้อมูลในฐานข้อมูล
     const [result] = await db.query(
-      "UPDATE Product SET title = ?, price = ?, quantity = ?, picture = ? WHERE id = ?",
-      [title, price, updatedQuantity, newPicture, id]
+      "UPDATE Product SET title = ?, description = ?, price = ?, quantity = ?, picture = ? WHERE id = ?",
+      [title, updatedDescription, updatedPrice, updatedQuantity, updatedPicture, id]
     );
 
     if (result.affectedRows === 0) return res.status(404).send("Product not found");
 
+    // ลบรูปเก่าถ้ามีการอัปโหลดรูปใหม่
     if (req.file && oldPicture) {
       const oldFilePath = path.join(__dirname, "uploads", oldPicture);
       if (fs.existsSync(oldFilePath)) {
@@ -118,7 +130,7 @@ app.put('/Product/:id', upload.single('picture'), async (req, res) => {
 
     res.send("Product updated successfully");
   } catch (err) {
-    console.error("Error updating product:", err);
+    console.error("❌ Error updating product:", err);
     res.status(500).send("Error updating product");
   }
 });
