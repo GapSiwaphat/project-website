@@ -66,54 +66,84 @@ app.post('/Insertproduct', upload.single('picture'), async (req, res) => {
   }
 });
 
-
 // แสดงรายการสินค้า
 app.get('/Product', async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT id, title, description, price, quantity, picture, sold FROM Product");
+    let categoryId = req.query.category_id; 
+
+    let sql = `
+      SELECT Product.id, Product.title, Product.description, Product.price, 
+             Product.quantity, Product.picture, Product.sold, Product.category_id, 
+             COALESCE(Category.name, 'ไม่มีหมวดหมู่') AS category_name
+      FROM Product
+      LEFT JOIN Category ON Product.category_id = Category.id
+    `;
+
+    let values = [];
+    
+    if (categoryId && !isNaN(categoryId)) {
+      sql += " WHERE Product.category_id = ?";
+      values.push(Number(categoryId)); 
+    }
+
+    const [rows] = await db.query(sql, values);
     rows.forEach(product => {
       if (product.picture) {
         product.picture = `http://localhost:3001/uploads/${product.picture}`;
       }
     });
+
     res.json(rows);
   } catch (err) {
-    console.error('Error fetching products:', err);
-    res.status(500).send('Error fetching data');
+    console.error('❌ Error fetching products:', err);
+    res.status(500).send('Error fetching products');
+  }
+});
+
+// ทำการแสดงหมวดหมู่สินค้า
+app.get('/categories', async (req, res) => {
+  try {
+    const [categories] = await db.query("SELECT id, name FROM Category");
+    res.json(categories);
+  } catch (err) {
+    console.error('❌ Error fetching categories:', err);
+    res.status(500).send('Error fetching categories');
   }
 });
 
 // อัปเดตสินค้า
 app.put('/Product/:id', upload.single('picture'), async (req, res) => {
   const { id } = req.params;
-  let { title, description, price, quantity } = req.body;
+  let { title, description, price, quantity, category_id } = req.body;
 
   try {
-    console.log("Received Data:", req.body);
-    const [oldData] = await db.query("SELECT picture, description, quantity FROM Product WHERE id = ?", [id]);
+    console.log("🔍 Received Data:", req.body);
+
+    // ดึงข้อมูลเก่าของสินค้า
+    const [oldData] = await db.query("SELECT * FROM Product WHERE id = ?", [id]);
     if (oldData.length === 0) return res.status(404).send("Product not found");
 
-    const oldPicture = oldData[0].picture;
-    const oldDescription = oldData[0].description;
-    const oldQuantity = oldData[0].quantity;
-    const updatedPicture = req.file ? req.file.filename : oldPicture;
-    const updatedQuantity = quantity !== undefined ? parseInt(quantity, 10) : oldQuantity;
-    const updatedPrice = price !== undefined ? parseFloat(price) : oldData[0].price;
-    const updatedDescription = description !== undefined ? description : oldDescription;
+    const oldProduct = oldData[0];
 
-    console.log("✅ Updating Product:", { title, updatedDescription, updatedPrice, updatedQuantity, updatedPicture });
+    // ป้องกันค่าที่เป็น NaN หรือ undefined
+    const updatedTitle = title || oldProduct.title;
+    const updatedDescription = description || oldProduct.description;
+    const updatedPrice = price ? parseFloat(price) : oldProduct.price;
+    const updatedQuantity = quantity ? parseInt(quantity, 10) : oldProduct.quantity;
+    const updatedPicture = req.file ? req.file.filename : oldProduct.picture;
+    const updatedCategory = category_id !== undefined && !isNaN(category_id) ? parseInt(category_id, 10) : oldProduct.category_id;
 
-    // อัปเดตข้อมูลในฐานข้อมูล
+    console.log("Updating Product:", { updatedTitle, updatedDescription, updatedPrice, updatedQuantity, updatedPicture, updatedCategory });
     const [result] = await db.query(
-      "UPDATE Product SET title = ?, description = ?, price = ?, quantity = ?, picture = ? WHERE id = ?",
-      [title, updatedDescription, updatedPrice, updatedQuantity, updatedPicture, id]
+      "UPDATE Product SET title = ?, description = ?, price = ?, quantity = ?, picture = ?, category_id = ? WHERE id = ?",
+      [updatedTitle, updatedDescription, updatedPrice, updatedQuantity, updatedPicture, updatedCategory, id]
     );
 
     if (result.affectedRows === 0) return res.status(404).send("Product not found");
 
-    // ลบรูปเก่าถ้ามีการอัปโหลดรูปใหม่
-    if (req.file && oldPicture) {
-      const oldFilePath = path.join(__dirname, "uploads", oldPicture);
+    // ลบไฟล์รูปเก่าถ้ามีการอัปโหลดรูปใหม่
+    if (req.file && oldProduct.picture) {
+      const oldFilePath = path.join(__dirname, "uploads", oldProduct.picture);
       if (fs.existsSync(oldFilePath)) {
         fs.unlinkSync(oldFilePath);
       }
@@ -125,7 +155,6 @@ app.put('/Product/:id', upload.single('picture'), async (req, res) => {
     res.status(500).send("Error updating product");
   }
 });
-
 
 // ลบสินค้า
 app.delete('/Product/:id', async (req, res) => {
@@ -146,5 +175,9 @@ app.delete('/Product/:id', async (req, res) => {
     res.status(500).send("Error deleting product");
   }
 });
+
+//---------------ส่วนของตระกร้าสินค้า-------------------------//
+
+
 
 app.listen(3001, () => console.log("Server running on port 3001"));

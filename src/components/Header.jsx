@@ -26,7 +26,7 @@ const Header = () => {
                         <li>
                             <Link to="/product" className="flex items-center space-x-2 hover:text-blue-600">
                                 <FaShoppingCart className="text-xl" />
-                                <span>Products</span>
+                                <span>Shops</span>
                             </Link>
                         </li>
                         <li>

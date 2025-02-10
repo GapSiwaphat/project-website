@@ -1,8 +1,9 @@
 import React from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import Home from '../pages/user/Home';
-import Cart from '../pages/user/Cart';
-import Product from '../pages/user/Product'
+import HomeUser from '../pages/user/HomeUser';
+import Cart from '../pages/Cart';
+import Product from '../pages/Product';
+import ProductUser from '../pages/user/ProductUser';
 import Dashboard from '../pages/admin/Dashboard';
 import Layout from '../Layout/Layout';
 import LayoutAdmin from '../Layout/LayoutAdmin';
@@ -10,7 +11,7 @@ import LayoutUser from '../Layout/LayoutUser';
 import Login from '../pages/auth/Login';
 import Register from '../pages/auth/Register';
 import ProductAdmin from '../pages/admin/ProductAdmin';
-import ProductUser from '../components/ProductUser';
+import Home from '../pages/Home';
 
 
 const router = createBrowserRouter([
@@ -37,9 +38,8 @@ const router = createBrowserRouter([
     path: '/user',
     element: <LayoutUser />,
     children: [
-      { index: true, element: <Home /> },
+      { index: true, element: <HomeUser /> },
       { path: 'product', element: <ProductUser /> },
-      { path: 'cart', element: <Cart /> },
     ]
   }
 ]);
