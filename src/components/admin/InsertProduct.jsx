@@ -17,8 +17,8 @@ const InsertProduct = () => {
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    console.log("Change Detected:", name, value); // Debug ค่าที่เปลี่ยน
-  
+    console.log("Change Detected:", name, value); 
+
     if (name === 'picture' && files.length > 0) {
       setProduct((prevProduct) => ({
         ...prevProduct,
@@ -32,34 +32,34 @@ const InsertProduct = () => {
       }));
     }
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
-  
+
     const { title, description, price, quantity, picture } = product;
     if (!title || !price || !quantity) {
       setErrorMessage('กรุณากรอกข้อมูลให้ครบถ้วน');
       return;
     }
-  
+
     const formData = new FormData();
     formData.append('title', title);
     formData.append('description', description);
-    formData.append('price', parseFloat(price)); // แปลงเป็นตัวเลข
-    formData.append('quantity', parseInt(quantity, 10)); // แปลงเป็นตัวเลข
+    formData.append('price', parseFloat(price));
+    formData.append('quantity', parseInt(quantity, 10));
     if (picture) formData.append('picture', picture);
-  
+
     console.log("FormData Content:");
     for (let pair of formData.entries()) {
       console.log(pair[0] + ': ' + pair[1]);
     }
-  
+
     try {
       const response = await axios.post("http://localhost:3001/Insertproduct", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-  
+
       console.log('✅ Product added successfully:', response.data);
       setProduct({ title: '', description: '', price: '', quantity: '', picture: null, picturePreview: null });
     } catch (error) {
@@ -67,7 +67,7 @@ const InsertProduct = () => {
       setErrorMessage('เกิดข้อผิดพลาดในการเพิ่มสินค้า');
     }
   };
-  
+
   return (
     <div className="max-w-screen-xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-xl">
       <h2 className="text-2xl font-bold mb-8">เพิ่มสินค้าใหม่</h2>

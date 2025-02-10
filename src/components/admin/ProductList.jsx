@@ -94,8 +94,8 @@ const ProductList = () => {
       formData.append("picture", formValues.file);
     }
   
-    // ✅ Debug: ตรวจสอบค่าที่ถูกส่งไป Backend
-    console.log("🟢 FormData Content:");
+    // ตรวจสอบค่าที่ถูกส่งไป Backend
+    console.log("FormData Content:");
     for (let pair of formData.entries()) {
       console.log(pair[0] + ':', pair[1]);
     }
@@ -111,7 +111,6 @@ const ProductList = () => {
       console.error('❌ Error updating product:', error);
     }
   };  
-  
   return (
     <div className="max-w-screen-xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-xl">
       <h2 className="text-2xl font-bold mb-6 text-center">รายการสินค้า</h2>

@@ -40,18 +40,14 @@ const upload = multer({
 // เพิ่มรายการสินค้า
 app.post('/Insertproduct', upload.single('picture'), async (req, res) => {
   try {
-    console.log(" Received Data:", req.body); // Debug ค่าที่ได้รับจาก Frontend
-
+    console.log(" Received Data:", req.body); 
     let { title, description, price, quantity } = req.body;
     const picture = req.file ? req.file.filename : null;
-
     // Debug ค่าก่อนแปลง
     console.log("🔍 Before Parsing:", { title, description, price, quantity });
-
     // แปลงค่าให้เป็นตัวเลข
     quantity = parseInt(quantity, 10);
     price = parseFloat(price);
-
     // Debug ค่าหลังแปลง
     console.log(" After Parsing:", { title, description, price, quantity });
 
@@ -93,18 +89,13 @@ app.put('/Product/:id', upload.single('picture'), async (req, res) => {
   let { title, description, price, quantity } = req.body;
 
   try {
-    // ✅ Debug: ตรวจสอบค่าที่ส่งมาจาก Frontend
-    console.log("🟢 Received Data:", req.body);
-
-    // ดึงข้อมูลเก่าจาก Database
+    console.log("Received Data:", req.body);
     const [oldData] = await db.query("SELECT picture, description, quantity FROM Product WHERE id = ?", [id]);
     if (oldData.length === 0) return res.status(404).send("Product not found");
 
     const oldPicture = oldData[0].picture;
     const oldDescription = oldData[0].description;
     const oldQuantity = oldData[0].quantity;
-
-    // ตรวจสอบค่าใหม่ ถ้าไม่ได้ส่งมาก็ใช้ค่าเก่า
     const updatedPicture = req.file ? req.file.filename : oldPicture;
     const updatedQuantity = quantity !== undefined ? parseInt(quantity, 10) : oldQuantity;
     const updatedPrice = price !== undefined ? parseFloat(price) : oldData[0].price;
