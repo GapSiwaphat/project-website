@@ -11,7 +11,7 @@ const ProductUser = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await axios.get("http://localhost:3001/Product");
+      const response = await axios.get("http://localhost:3003/Product");
       setProducts(response.data);
     } catch (error) {
       console.error("❌ Error fetching products:", error);

@@ -5,9 +5,8 @@ import { CartProvider } from "../components/Cartcontext";
 const Product = () => {
   return (
     <div>
-      <CartProvider>
       <ProductList />
-      </CartProvider>
+
     </div>
   )
 }

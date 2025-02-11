@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { FaEdit, FaTrash } from "react-icons/fa";
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
@@ -13,7 +14,7 @@ const ProductList = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/Product');
+      const response = await axios.get('http://localhost:3003/Product');
       setProducts(response.data);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -22,7 +23,7 @@ const ProductList = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/categories');
+      const response = await axios.get('http://localhost:3003/categories');
       setCategories(response.data);
     } catch (error) {
       console.error('❌ Error fetching categories:', error);
@@ -30,64 +31,54 @@ const ProductList = () => {
   };
 
   const handleEdit = async (product) => {
+    let imageFile = null;
+  
     const { value: formValues } = await Swal.fire({
-      title: 'แก้ไขสินค้า',
-      width: '600px', // ✅ เพิ่มความกว้าง
-      customClass: {
-        popup: 'no-scroll' // ✅ ป้องกันการเลื่อน
-      },
+      title: "แก้ไขสินค้า",
+      width: "500px",
+      customClass: { popup: "rounded-xl shadow-lg p-6" },
       html: `
         <style>
           .swal2-input, .swal2-textarea, .swal2-select {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
-            font-size: 16px;
+            width: 100%; padding: 8px; border-radius: 6px;
+            border: 1px solid #ddd; font-size: 14px;
           }
-          .swal2-input:focus, .swal2-textarea:focus, .swal2-select:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
-            outline: none;
+          .swal2-label { font-weight: bold; display: block; margin-bottom: 5px; color: #333; }
+          .swal2-field-group { margin-bottom: 12px; }
+          .swal2-field-row { display: flex; gap: 10px; }
+          .swal2-field-row > div { flex: 1; }
+          .swal2-img-preview {
+            width: 100%; height: 140px; object-fit: cover; 
+            border-radius: 6px; border: 1px solid #ddd;
           }
-          .swal2-label {
-            font-weight: bold;
-            display: block;
-            margin-bottom: 6px;
-            color: #333;
+          .swal2-file-input { display: none; } 
+          .swal2-file-label {
+            display: flex; align-items: center; justify-content: center;
+            padding: 8px; background: #f8f8f8; border-radius: 6px; cursor: pointer;
+            font-size: 14px; border: 1px solid #ddd;
           }
-          .swal2-field-group {
-            margin-bottom: 15px;
-          }
-          .swal2-field-row {
-            display: flex;
-            gap: 12px;
-          }
-          .swal2-field-row > div {
-            flex: 1;
-          }
+          .swal2-file-label:hover { background: #e0e0e0; }
         </style>
   
-        <div style="display: flex; flex-direction: column; gap: 15px;">
+        <div>
           <div class="swal2-field-group">
             <label class="swal2-label">ชื่อสินค้า</label>
-            <input id="swal-title" class="swal2-input" placeholder="ชื่อสินค้า" value="${product.title}">
+            <input id="swal-title" class="swal2-input" value="${product.title}">
           </div>
   
           <div class="swal2-field-group">
-            <label class="swal2-label">รายละเอียดสินค้า</label>
-            <textarea id="swal-description" class="swal2-textarea" placeholder="รายละเอียดสินค้า">${product.description || ""}</textarea>
+            <label class="swal2-label">รายละเอียด</label>
+            <textarea id="swal-description" class="swal2-textarea">${product.description || ""}</textarea>
           </div>
   
           <div class="swal2-field-row">
             <div class="swal2-field-group">
-              <label class="swal2-label">ราคา</label>
-              <input id="swal-price" class="swal2-input" placeholder="ราคา" type="number" value="${product.price}">
+              <label class="swal2-label">ราคา (฿)</label>
+              <input id="swal-price" class="swal2-input" type="number" value="${product.price}">
             </div>
             <div class="swal2-field-group">
-              <label class="swal2-label">จำนวนสินค้าในสต็อก</label>
-              <input id="swal-quantity" class="swal2-input" placeholder="จำนวนสินค้า" type="number" value="${product.quantity}">
+              <label class="swal2-label">จำนวนสินค้า</label>
+              <input id="swal-quantity" class="swal2-input" type="number" value="${product.quantity}">
             </div>
           </div>
   
@@ -98,22 +89,39 @@ const ProductList = () => {
               ${categories.map(cat => `<option value="${cat.id}" ${cat.id === product.category_id ? 'selected' : ''}>${cat.name}</option>`).join("")}
             </select>
           </div>
+  
+          <div class="swal2-field-group">
+            <label class="swal2-label">รูปภาพสินค้า</label>
+            <input type="file" id="swal-image" class="swal2-file-input" accept="image/*">
+            <label for="swal-image" class="swal2-file-label">เปลี่ยนรูปภาพ</label>
+            <img id="swal-image-preview" src="${product.picture}" class="swal2-img-preview">
+          </div>
         </div>
       `,
-      focusConfirm: false,
+      didOpen: () => {
+        document.getElementById('swal-image').addEventListener('change', (event) => {
+          const file = event.target.files[0];
+          if (file) {
+            imageFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              document.getElementById('swal-image-preview').src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+      },
       showCancelButton: true,
       confirmButtonText: "บันทึก",
       cancelButtonText: "ยกเลิก",
       preConfirm: () => {
-        let categoryValue = document.getElementById('swal-category').value;
-        let category_id = categoryValue ? parseInt(categoryValue, 10) : null;
-  
         return {
           title: document.getElementById('swal-title').value,
           description: document.getElementById('swal-description').value,
           price: parseFloat(document.getElementById('swal-price').value) || 0,
           quantity: parseInt(document.getElementById('swal-quantity').value) || 0,
-          category_id: isNaN(category_id) ? null : category_id,
+          category_id: parseInt(document.getElementById('swal-category').value, 10) || null,
+          imageFile: imageFile,
         };
       }
     });
@@ -121,15 +129,26 @@ const ProductList = () => {
     if (!formValues) return;
   
     try {
-      await axios.put(`http://localhost:3001/Product/${product.id}`, formValues);
+      const formData = new FormData();
+      formData.append("title", formValues.title);
+      formData.append("description", formValues.description);
+      formData.append("price", formValues.price);
+      formData.append("quantity", formValues.quantity);
+      formData.append("category_id", formValues.category_id);
+      if (formValues.imageFile) {
+        formData.append("picture", formValues.imageFile);
+      }
+  
+      await axios.put(`http://localhost:3003/Product/${product.id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+  
       Swal.fire("สำเร็จ!", "สินค้าได้รับการอัปเดต", "success");
       fetchProducts();
     } catch (error) {
-      Swal.fire("เกิดข้อผิดพลาด!", "ไม่สามารถแก้ไขสินค้าได้", "error");
-      console.error('❌ Error updating product:', error);
+      Swal.fire("❌ เกิดข้อผิดพลาด!", "ไม่สามารถแก้ไขสินค้าได้", "error");
     }
   };  
-
   return (
     <div className="max-w-screen-xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-xl">
       <h2 className="text-2xl font-bold mb-6 text-center">รายการสินค้า</h2>
@@ -163,14 +182,17 @@ const ProductList = () => {
                 <td className="border px-4 py-2 text-center">฿{product.price}</td>
                 <td className="border px-4 py-2 text-center">{product.quantity} ชิ้น</td>
                 <td className="border px-4 py-2 text-center">
-                  <button onClick={() => handleEdit(product)} className="bg-yellow-500 text-white px-3 py-1 rounded mr-2">แก้ไข</button>
-                  <button onClick={() => handleDelete(product.id)} className="bg-red-500 text-white px-3 py-1 rounded">ลบ</button>
+                  <button onClick={() => handleEdit(product)} className="text-yellow-500 hover:text-yellow-600 mr-2">
+                    <FaEdit size={20} />
+                  </button>
+                  <button onClick={() => handleDelete(product.id)} className="text-red-500 hover:text-red-600">
+                    <FaTrash size={20} />
+                  </button>
                 </td>
               </tr>
             ))
           )}
         </tbody>
-
       </table>
     </div>
   );

@@ -12,14 +12,15 @@ const ProductList = () => {
     fetchProducts();
     fetchCategories();
   }, [selectedCategory]);
-
+  
   const fetchProducts = async () => {
     try {
-      let url = "http://localhost:3001/Product";
+      let url = "http://localhost:3003/Product";
       if (selectedCategory) {
         url += `?category_id=${selectedCategory}`;
       }
       const response = await axios.get(url);
+      console.log("📸 Products Data:", response.data); // ✅ ตรวจสอบค่าที่ API ส่งมา
       setProducts(response.data);
     } catch (error) {
       console.error("❌ Error fetching products:", error);
@@ -28,7 +29,7 @@ const ProductList = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get("http://localhost:3001/categories");
+      const response = await axios.get("http://localhost:3003/categories");
       setCategories(response.data);
     } catch (error) {
       console.error("Error fetching categories:", error);
@@ -40,56 +41,51 @@ const ProductList = () => {
   };
 
   return (
-    <div className="max-w-screen-xl mx-auto mt-10 px-6 flex gap-6">
-      {/* Sidebar ค้นหาตามหมวดหมู่ */}
-      <div className="w-1/4 bg-white shadow-lg p-6 rounded-lg sticky top-20">
-        <h2 className="text-xl font-bold mb-4">หมวดหมู่สินค้า</h2>
-        <ul>
-          <li
-            className={`cursor-pointer py-2 px-4 rounded-lg transition ${
-              selectedCategory === "" ? "bg-green-500 text-white" : "hover:bg-gray-100"
+    <div className="max-w-screen-lg mx-auto mt-48 px-6 text-center ">
+      <h1 className="text-xl font-bold">รายการสินค้า</h1>
+      <p className="text-gray-500 mt-2">เลือกซื้อสินค้า</p>
+      
+      <div className="mt-6 bg-white shadow p-4 rounded-lg">
+        <div className="flex overflow-x-auto space-x-4 pb-2">
+          <button
+            className={`px-4 py-2 rounded-full ${
+              selectedCategory === "" ? "bg-black text-white" : "bg-gray-200"
             }`}
             onClick={() => handleCategoryChange("")}
           >
             ทั้งหมด
-          </li>
+          </button>
           {categories.map((cat) => (
-            <li
+            <button
               key={cat.id}
-              className={`cursor-pointer py-2 px-4 rounded-lg transition ${
-                selectedCategory === cat.id ? "bg-green-500 text-white" : "hover:bg-gray-100"
+              className={`px-4 py-2 rounded-full ${
+                selectedCategory === cat.id ? "bg-black text-white" : "bg-gray-200"
               }`}
               onClick={() => handleCategoryChange(cat.id)}
             >
               {cat.name}
-            </li>
+            </button>
           ))}
-        </ul>
+        </div>
       </div>
-
-      {/* Grid แสดงสินค้า */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+      
+      <div className="grid grid-cols-4 gap-6 mt-6">
         {products.length === 0 ? (
-          <p className="text-gray-600 col-span-4 text-center text-lg">ไม่มีสินค้าในระบบ</p>
+          <p className="text-gray-600 col-span-4 text-lg">ไม่มีสินค้าในระบบ</p>
         ) : (
           products.map((product) => (
-            <div key={product.id} className="bg-white shadow-lg rounded-xl p-5 hover:shadow-2xl transition duration-300 flex flex-col items-center">
-              <div className="w-full h-[220px] flex justify-center items-center overflow-hidden rounded-lg">
-                <img
-                  src={product.picture}
-                  alt={product.title}
-                  className="w-full h-full object-cover rounded-md"
-                />
-              </div>
-              <h2 className="text-lg font-bold mt-3 text-center">{product.title}</h2>
+            <div key={product.id} className="bg-white shadow rounded-lg p-4 flex flex-col items-center w-full">
+              <img
+                src={product.picture}
+                alt={product.title}
+                className="w-full h-40 object-cover rounded-lg"
+              />
+              <h2 className="text-md font-bold mt-3 text-center">{product.title}</h2>
               <p className="text-gray-500 text-sm text-center">{product.description}</p>
-              <p className="text-green-600 font-bold mt-2 text-xl">฿{product.price}</p>
+              <p className="text-black font-bold mt-2 text-lg">฿{product.price}</p>
               <button
-                onClick={() => {
-                  console.log("📌 กดเพิ่มสินค้า:", product);
-                  addToCart(product);
-                }}
-                className="mt-3 px-6 py-2 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 transition"
+                onClick={() => addToCart(product)}
+                className="mt-3 px-4 py-2 bg-black text-white font-semibold hover:bg-gray-800 transition w-full"
               >
                 เพิ่มลงรถเข็น
               </button>
