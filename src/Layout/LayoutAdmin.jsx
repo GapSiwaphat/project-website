@@ -1,11 +1,13 @@
-import React from 'react'
-import HeaderAdmin from '../components/admin/HeaderAdmin'
-
+import React from 'react';
+import { Outlet } from 'react-router-dom';
+import HeaderAdmin from '../components/admin/HeaderAdmin';
 
 const LayoutAdmin = () => {
   return (
-    <HeaderAdmin />
-  )
-}
+    <div className="flex">
+      <HeaderAdmin /> 
+    </div>
+  );
+};
 
-export default LayoutAdmin
+export default LayoutAdmin;

@@ -14,7 +14,7 @@ const ProductUser = () => {
       const response = await axios.get("http://localhost:3003/Product");
       setProducts(response.data);
     } catch (error) {
-      console.error("❌ Error fetching products:", error);
+      console.error("Error fetching products:", error);
     }
   };
 
@@ -22,12 +22,12 @@ const ProductUser = () => {
     <div className="max-w-screen-xl mx-auto mt-20 px-6">
       <h1 className="text-4xl text-center mb-10">สินค้า</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
         {products.length === 0 ? (
-          <p className="text-center text-gray-600 col-span-4">ไม่มีสินค้าในระบบ</p>
+          <p className="text-center text-gray-600 col-span-full">ไม่มีสินค้าในระบบ</p>
         ) : (
           products.map((product) => (
-            <div key={product.id} className="flex flex-col items-center text-center">
+            <div key={product.id} className="bg-white shadow-lg rounded-lg p-4 flex flex-col items-center text-center">
               <div className="w-full h-[250px] flex justify-center items-center overflow-hidden">
                 <img
                   src={product.picture}
@@ -38,8 +38,8 @@ const ProductUser = () => {
               <h2 className="text-lg font-bold mt-4">{product.title}</h2>
               
               <Link to="/Product">
-                <button className="mt-4 px-6 py-2 bg-black text-white font-semibold  hover:bg-gray-800 transition">
-                  see more
+                <button className="mt-4 px-6 py-2 bg-black text-white font-semibold hover:bg-gray-800 transition w-full">
+                  ดูเพิ่มเติม
                 </button>
               </Link>
             </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
-import { CartContext } from "./Cartcontext";
+import { CartContext } from "../components/Cartcontext";
 
 const ProductList = () => {
   const { addToCart } = useContext(CartContext);
@@ -12,7 +12,7 @@ const ProductList = () => {
     fetchProducts();
     fetchCategories();
   }, [selectedCategory]);
-  
+
   const fetchProducts = async () => {
     try {
       let url = "http://localhost:3003/Product";
@@ -20,10 +20,10 @@ const ProductList = () => {
         url += `?category_id=${selectedCategory}`;
       }
       const response = await axios.get(url);
-      console.log("📸 Products Data:", response.data); // ✅ ตรวจสอบค่าที่ API ส่งมา
+      console.log("Products Data:", response.data);
       setProducts(response.data);
     } catch (error) {
-      console.error("❌ Error fetching products:", error);
+      console.error("Error fetching products:", error);
     }
   };
 
@@ -41,12 +41,12 @@ const ProductList = () => {
   };
 
   return (
-    <div className="max-w-screen-lg mx-auto mt-48 px-6 text-center ">
+    <div className="max-w-screen-lg mx-auto mt-48 px-6 text-center">
       <h1 className="text-xl font-bold">รายการสินค้า</h1>
       <p className="text-gray-500 mt-2">เลือกซื้อสินค้า</p>
-      
+
       <div className="mt-6 bg-white shadow p-4 rounded-lg">
-        <div className="flex overflow-x-auto space-x-4 pb-2">
+        <div className="flex flex-wrap justify-center gap-2">
           <button
             className={`px-4 py-2 rounded-full ${
               selectedCategory === "" ? "bg-black text-white" : "bg-gray-200"
@@ -68,10 +68,10 @@ const ProductList = () => {
           ))}
         </div>
       </div>
-      
-      <div className="grid grid-cols-4 gap-6 mt-6">
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6">
         {products.length === 0 ? (
-          <p className="text-gray-600 col-span-4 text-lg">ไม่มีสินค้าในระบบ</p>
+          <p className="text-gray-600 col-span-full text-lg">ไม่มีสินค้าในระบบ</p>
         ) : (
           products.map((product) => (
             <div key={product.id} className="bg-white shadow rounded-lg p-4 flex flex-col items-center w-full">

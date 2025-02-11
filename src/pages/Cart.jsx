@@ -1,80 +1,133 @@
-import React, { useContext } from "react";
-import { useNavigate } from "react-router-dom"; 
+import React, { useContext, useEffect, useState } from "react";
 import axios from "axios";
 import { CartContext } from "../components/Cartcontext";
 
-const Payment= () => {
-  const { cart, setCart, removeItem } = useContext(CartContext);
-  const navigate = useNavigate(); 
-  const totalPrice = cart.reduce((acc, item) => acc + item.price * item.count, 0);
-  const handleCheckout = () => {
-    const user = JSON.parse(localStorage.getItem("user")); 
+const Cart = () => {
+  const { cart, setCart, userId } = useContext(CartContext);
+  const [cartTotal, setCartTotal] = useState(0); 
+  const [loading, setLoading] = useState(true); 
 
-    if (!user) {
-      alert("กรุณาเข้าสู่ระบบก่อนทำการสั่งซื้อ!");
-      navigate("/login"); 
-    } else {
-      alert("สั่งซื้อสำเร็จ!");
+  useEffect(() => {
+    if (userId) {
+      axios.get(`http://localhost:3003/cart/${userId}`)
+        .then((response) => {
+          setCart(response.data);
+          setLoading(false); 
+        })
+        .catch((error) => {
+          console.error("Error fetching cart:", error);
+          setLoading(false);
+        });
+
+        axios.get(`http://localhost:3003/cart/total/${userId}`)
+        .then((response) => setCartTotal(response.data.total))
+        .catch((error) => console.error(" Error fetching cart total:", error));      
+      
+    }
+  }, [userId]);
+
+  const updateCartItem = async (productId, newCount) => {
+    if (newCount < 1) {
+      removeCartItem(productId);
+      return;
+    }
+
+    try {
+      await axios.put("http://localhost:3003/cart/update", {
+        userId,
+        productId,
+        count: newCount,
+      });
+
+      const updatedCart = await axios.get(`http://localhost:3003/cart/${userId}`);
+      setCart(updatedCart.data);
+
+      const updatedTotal = await axios.get(`http://localhost:3003/cart/total/${userId}`);
+      setCartTotal(updatedTotal.data.total);
+    } catch (error) {
+      console.error("Error updating cart:", error);
     }
   };
 
-  return (
-    <div className="max-w-screen-lg mx-auto mt-48 px-6 text-center">
-      <h1 className="text-2xl font-bold">ตะกร้าสินค้า</h1>
-      {cart.length === 0 ? (
-        <p className="text-gray-500 mt-6">ไม่มีสินค้าในตะกร้า</p>
-      ) : (
-        <>
-          <div className="mt-6 bg-white shadow-lg p-6 rounded-lg">
-            {cart.map((item) => (
-              <div key={item.productId} className="flex justify-between items-center border-b py-4">
-                <img src={item.picture} alt={item.title} className="w-16 h-16 object-cover rounded-lg shadow-md" />
-                
-                <div className="flex-1 text-left ml-4">
-                  <h2 className="font-bold text-lg">{item.title}</h2>
-                  <p className="text-gray-500 text-sm">{item.description}</p>
-                  <p className="text-black font-bold text-lg">฿{item.price * item.count}</p>
-                </div>
+  const removeCartItem = async (productId) => {
+    try {
+      await axios.delete(`http://localhost:3003/cart/remove/${userId}/${productId}`);
 
-                {/* เพิ่ม/ลดจำนวนสินค้า */}
-                <div className="flex items-center space-x-4">
+      const updatedCart = await axios.get(`http://localhost:3003/cart/${userId}`);
+      setCart(updatedCart.data);
+
+      const updatedTotal = await axios.get(`http://localhost:3003/cart/total/${userId}`);
+      setCartTotal(updatedTotal.data.total);
+    } catch (error) {
+      console.error("Error removing product:", error);
+    }
+  };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto p-6 mt-48">
+      <h1 className="text-2xl font-bold text-gray-800">ตะกร้าสินค้า</h1>
+      
+      {cart?.length === 0 ? (
+        <p className="text-gray-500 mt-4 text-lg">ไม่มีสินค้าในตะกร้า</p>
+      ) : (
+        <div className="mt-6 space-y-4">
+          {cart.map((item) => (
+            <div key={item.productId} className="flex items-center bg-white shadow-md rounded-lg p-4">
+              <img 
+                src={`http://localhost:3003/uploads/${item.picture}`}
+                alt={item.title} 
+                className="w-24 h-24 object-cover rounded-lg"
+              />
+              <div className="ml-4 flex-1">
+                <h2 className="text-lg font-semibold">{item.title}</h2>
+                <p className="text-black font-bold">฿{item.price * item.count}</p>
+                
+                <div className="flex items-center mt-2">
                   <button 
-                    className="px-3 py-1 text-black rounded-md  hover:bg-gray-200 transition"
-                    onClick={() => decreaseQuantity(item.productId)}
+                    className="px-3 py-1 bg-gray-300 text-black rounded-l-lg hover:bg-gray-400"
+                    onClick={() => updateCartItem(item.productId, item.count - 1)}
                   >
                     -
                   </button>
-                  <span className="font-semibold text-xl">{item.count}</span>
+                  
+                  <span className="px-4 py-1 text-lg">{item.count}</span>
+
                   <button 
-                    className="px-3 py-1 text-black rounded-md  hover:bg-gray-200 transition"
-                    onClick={() => increaseQuantity(item.productId)}
+                    className="px-3 py-1 bg-gray-300 text-black rounded-r-lg hover:bg-gray-400"
+                    onClick={() => updateCartItem(item.productId, item.count + 1)}
                   >
                     +
                   </button>
                 </div>
-
-                <button 
-                  className="px-3 py-1 bg-black text-white hover:bg-slate-200 transition ml-4"
-                  onClick={() => removeItem(item.productId)}
-                >
-                  ลบ
-                </button>
               </div>
-            ))}
-          </div>
-          <div className="mt-6 text-right">
-            <h2 className="text-xl font-bold">รวมทั้งหมด: ฿{totalPrice}</h2>
-            <button 
-              onClick={handleCheckout} 
-              className="mt-4 px-6 py-2 bg-black text-white font-bold hover:bg-blue-600 transition"
-            >
-              สั่งซื้อ
-            </button>
-          </div>
-        </>
+              <button 
+                className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                onClick={() => removeCartItem(item.productId)}
+              >
+                ลบ
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {cart?.length > 0 && (
+        <div className="mt-6 text-right text-lg font-bold">
+          ราคารวมทั้งหมด: ฿{cartTotal}
+        </div>
+      )}
+
+      {cart?.length > 0 && (
+        <button className="mt-6 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 w-full">
+          ดำเนินการสั่งซื้อ
+        </button>
       )}
     </div>
   );
 };
 
-export default Payment;
+export default Cart;
