@@ -54,8 +54,6 @@ app.post("/login", async (req, res) => {
     }
 
     const user = users[0];
-
-    // **ตรวจสอบรหัสผ่านที่เข้ารหัส**
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ error: "อีเมลหรือรหัสผ่านไม่ถูกต้อง" });
@@ -75,15 +73,12 @@ app.post("/register", async (req, res) => {
     if (!name || !email || !password) {
       return res.status(400).json({ error: "กรุณากรอกข้อมูลให้ครบ" });
     }
-
-    // เข้ารหัสรหัสผ่าน
+    // เข้ารหัส
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-
     // ใช้ name แทน username
     const sql = "INSERT INTO User (name, email, password) VALUES (?, ?, ?)";
     await db.query(sql, [name, email, hashedPassword]);
-
     res.json({ message: "User registered successfully" });
   } catch (error) {
     console.error("Registration failed:", error);
@@ -92,22 +87,20 @@ app.post("/register", async (req, res) => {
 });
 
 //----------------------------เเสดงรายการสินค้า-------------------------------//
+
 // เพิ่มรายการสินค้า
 app.post('/Insertproduct', upload.single('picture'), async (req, res) => {
   try {
     console.log(" Received Data:", req.body);
     let { title, description, price, quantity } = req.body;
     const picture = req.file ? req.file.filename : null;
-    // Debug ค่าก่อนแปลง
-    console.log("🔍 Before Parsing:", { title, description, price, quantity });
-    // แปลงค่าให้เป็นตัวเลข
+    console.log(" Before Parsing:", { title, description, price, quantity });
     quantity = parseInt(quantity, 10);
     price = parseFloat(price);
-    // Debug ค่าหลังแปลง
     console.log(" After Parsing:", { title, description, price, quantity });
 
     if (!title || isNaN(price) || isNaN(quantity)) {
-      return res.status(400).json({ error: "กรุณากรอกข้อมูลให้ครบถ้วน และ quantity กับ price ต้องเป็นตัวเลข" });
+      return res.status(400).json({ error: "กรุณากรอกข้อมูลให้ครบถ้วน" });
     }
 
     const sql = "INSERT INTO Product (title, description, price, quantity, picture) VALUES (?, ?, ?, ?, ?)";
@@ -125,7 +118,6 @@ app.post('/Insertproduct', upload.single('picture'), async (req, res) => {
 app.get('/Product', async (req, res) => {
   try {
     let categoryId = req.query.category_id;
-
     let sql = `
       SELECT Product.id, Product.title, Product.description, Product.price, 
              Product.quantity, Product.picture, Product.sold, Product.category_id, 
@@ -135,22 +127,19 @@ app.get('/Product', async (req, res) => {
     `;
 
     let values = [];
-
     if (categoryId && !isNaN(categoryId)) {
       sql += " WHERE Product.category_id = ?";
       values.push(Number(categoryId));
     }
-
     const [rows] = await db.query(sql, values);
     rows.forEach(product => {
       if (product.picture) {
         product.picture = `http://localhost:3003/uploads/${product.picture}`;
       }
     });
-
     res.json(rows);
   } catch (err) {
-    console.error('❌ Error fetching products:', err);
+    console.error('Error fetching products:', err);
     res.status(500).send('Error fetching products');
   }
 });
@@ -179,7 +168,6 @@ app.put('/Product/:id', upload.single('picture'), async (req, res) => {
     if (oldData.length === 0) return res.status(404).send("Product not found");
 
     const oldProduct = oldData[0];
-
     // ป้องกันค่าที่เป็น NaN หรือ undefined
     const updatedTitle = title || oldProduct.title;
     const updatedDescription = description || oldProduct.description;
@@ -195,15 +183,12 @@ app.put('/Product/:id', upload.single('picture'), async (req, res) => {
     );
 
     if (result.affectedRows === 0) return res.status(404).send("Product not found");
-
-    // ลบไฟล์รูปเก่าถ้ามีการอัปโหลดรูปใหม่
     if (req.file && oldProduct.picture) {
       const oldFilePath = path.join(__dirname, "uploads", oldProduct.picture);
       if (fs.existsSync(oldFilePath)) {
         fs.unlinkSync(oldFilePath);
       }
     }
-
     res.send("Product updated successfully");
   } catch (err) {
     console.error("Error updating product:", err);
@@ -235,92 +220,106 @@ app.delete('/Product/:id', async (req, res) => {
 
 // เพิ่มสินค้าลงตระกร้า
 app.post("/cart/add", async (req, res) => {
+  const { userId, productId, count, price } = req.body;
   try {
-    const { userId, productId, count, price } = req.body;
-
-    console.log("🛒 Adding product to cart:", req.body);
-
-    if (!userId || !productId || !count || !price) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-
-    // ✅ ตรวจสอบว่าผู้ใช้มีตะกร้าอยู่หรือยัง
+    console.log(`Adding product to cart: userId=${userId}, productId=${productId}, count=${count}, price=${price}`);
     let [cart] = await db.query("SELECT id FROM Cart WHERE orderedById = ?", [userId]);
+
     if (cart.length === 0) {
-      console.log("🚨 No cart found, creating a new cart...");
+      console.log(`🔹 No existing cart for user ${userId}, creating a new one...`);
       const [newCart] = await db.query(
         "INSERT INTO Cart (cartTotal, createdAt, updatedAt, orderedById) VALUES (0, NOW(), NOW(), ?)",
         [userId]
       );
       cart = [{ id: newCart.insertId }];
     }
-    const cartId = cart[0].id; // ✅ ใช้ cartId ที่มีอยู่
-    console.log(`✅ Using cartId: ${cartId}`);
-
-    // ✅ ตรวจสอบว่าสินค้าถูกเพิ่มลงในตะกร้าแล้วหรือยัง
+    const cartId = cart[0].id;
     const [existing] = await db.query(
       "SELECT * FROM ProductOnCart WHERE cartId = ? AND productId = ?",
       [cartId, productId]
     );
 
     if (existing.length > 0) {
-      console.log(`🔄 Updating quantity for productId: ${productId}`);
+      console.log(`Updating existing product in cart`);
       await db.query(
         "UPDATE ProductOnCart SET count = count + ? WHERE cartId = ? AND productId = ?",
         [count, cartId, productId]
       );
     } else {
-      console.log(`➕ Adding new product to cartId: ${cartId}, productId: ${productId}`);
+      console.log(`➕ Adding new product to cart`);
       await db.query(
         "INSERT INTO ProductOnCart (cartId, productId, count, price) VALUES (?, ?, ?, ?)",
         [cartId, productId, count, price]
       );
     }
 
+    console.log(`Successfully added/updated product in cart`);
+    await updateCartTotal(userId);
     res.json({ success: true, message: "Product added to cart successfully" });
+
   } catch (error) {
-    console.error("❌ Error adding to cart:", error);
+    console.error("Error adding to cart:", error);
     res.status(500).json({ error: "Failed to add product to cart" });
   }
 });
 
+const updateCartTotal = async (userId) => {
+  try {
+    const [cart] = await db.query("SELECT id FROM Cart WHERE orderedById = ?", [userId]);
+    if (cart.length === 0) {
+      console.warn(`Cart not found for userId: ${userId}`);
+      return;
+    }
+    const cartId = cart[0].id;
+    const [total] = await db.query(
+      "SELECT SUM(pc.count * pc.price) AS total FROM ProductOnCart pc WHERE pc.cartId = ?",
+      [cartId]
+    );
+
+    const cartTotal = total[0].total || 0;
+
+    await db.query("UPDATE Cart SET cartTotal = ? WHERE id = ?", [cartTotal, cartId]);
+
+    console.log(`Updated cart total for userId ${userId}: ฿${cartTotal}`);
+  } catch (error) {
+    console.error("Error updating cart total:", error);
+  }
+};
+
+
 app.get("/cart/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
-    console.log(`📌 Fetching cart for userId: ${userId}`);
-    
-    // ค้นหาตะกร้าของผู้ใช้
+    console.log(`Fetching cart for userId: ${userId}`);
     const [cart] = await db.query("SELECT id FROM Cart WHERE orderedById = ?", [userId]);
 
     if (cart.length === 0) {
       // ถ้าไม่พบ ให้สร้าง Cart ใหม่
-      console.log(`🚨 No cart found for userId: ${userId}, creating a new cart...`);
+      console.log(`No cart found for userId: ${userId}, creating a new cart...`);
       const [newCart] = await db.query(
         "INSERT INTO Cart (cartTotal, createdAt, updatedAt, orderedById) VALUES (0, NOW(), NOW(), ?)",
         [userId]
       );
-      return res.json([]);  // คืนค่าตะกร้าของผู้ใช้เป็น empty array
+      return res.json([]); 
     }
-
-    const cartId = cart[0].id;
+    const cartId = cart[0].id;o0['']
     const [cartItems] = await db.query(
       "SELECT pc.productId, p.title, p.description, p.price, pc.count, p.picture FROM ProductOnCart pc JOIN Product p ON pc.productId = p.id WHERE pc.cartId = ?",
       [cartId]
     );
 
-    console.log("📥 Cart Data Received:", cartItems);
+    console.log("Cart Data Received:", cartItems);
     res.json(cartItems);
   } catch (error) {
-    console.error("❌ Failed to fetch cart items:", error);
+    console.error("Failed to fetch cart items:", error);
     res.status(500).json({ error: "Failed to fetch cart items" });
   }
 });
 
 // อัปเดตจำนวนสินค้าในตะกร้า
-app.put('/cart/update', async (req, res) => {
+app.put("/cart/update", async (req, res) => {
+  const { userId, productId, count } = req.body;
   try {
-    const { userId, productId, count } = req.body;
-
     if (count <= 0) {
       await db.query(
         "DELETE FROM ProductOnCart WHERE cartId = (SELECT id FROM Cart WHERE orderedById = ?) AND productId = ?",
@@ -332,17 +331,10 @@ app.put('/cart/update', async (req, res) => {
         [count, userId, productId]
       );
     }
-
-    // ✅ อัปเดต `cartTotal`
-    await db.query(`
-      UPDATE Cart 
-      SET cartTotal = (SELECT COALESCE(SUM(pc.count * pc.price), 0) FROM ProductOnCart pc WHERE pc.cartId = (SELECT id FROM Cart WHERE orderedById = ?))
-      WHERE orderedById = ?
-    `, [userId, userId]);
-
+    await updateCartTotal(userId);
     res.json({ message: "Cart updated successfully" });
   } catch (error) {
-    console.error("❌ Error updating cart:", error);
+    console.error("Error updating cart:", error);
     res.status(500).json({ error: "Failed to update cart" });
   }
 });
@@ -351,12 +343,10 @@ app.put('/cart/update', async (req, res) => {
 app.delete('/cart/remove/:userId/:productId', async (req, res) => {
   try {
     const { userId, productId } = req.params;
-
     await db.query(
       "DELETE FROM ProductOnCart WHERE cartId = (SELECT id FROM Cart WHERE orderedById = ?) AND productId = ?",
       [userId, productId]
     );
-
     res.json({ message: "Product removed from cart" });
   } catch (error) {
     console.error("Error removing product from cart:", error);
@@ -368,7 +358,6 @@ app.delete('/cart/remove/:userId/:productId', async (req, res) => {
 app.delete('/cart/clear/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-
     await db.query(
       "DELETE FROM ProductOnCart WHERE cartId = (SELECT id FROM Cart WHERE orderedById = ?)",
       [userId]
@@ -384,57 +373,63 @@ app.delete('/cart/clear/:userId', async (req, res) => {
 // Route สำหรับดึงราคารวมทั้งหมดของตะกร้า
 app.get("/cart/total/:userId", async (req, res) => {
   const { userId } = req.params;
-
   try {
     // ตรวจสอบว่าผู้ใช้มีตะกร้าอยู่หรือไม่
     const [cart] = await db.query("SELECT id FROM Cart WHERE orderedById = ?", [userId]);
 
     if (cart.length === 0) {
-      return res.json({ total: 0 }); // หากไม่มีตะกร้าสินค้าให้ส่งผลรวม 0
+      return res.json({ total: 0 }); 
     }
-
     const cartId = cart[0].id;
-
-    // คำนวณราคารวมทั้งหมด
     const [total] = await db.query(
       "SELECT SUM(pc.count * pc.price) AS total FROM ProductOnCart pc WHERE pc.cartId = ?",
       [cartId]
     );
-
-    res.json({ total: total[0].total || 0 }); // ส่งกลับผลรวม
+    res.json({ total: total[0].total || 0 }); 
   } catch (error) {
-    console.error("❌ Error fetching cart total:", error);
+    console.error("Error fetching cart total:", error);
     res.status(500).json({ error: "Failed to fetch cart total" });
   }
 });
 
+//สร้าง Order
+app.post("/order/create", async (req, res) => {
+  console.log("Received request body:", req.body);
+  const { userId, cartTotal, cartItems, address, paymentMethod } = req.body;
 
-app.post('/order/create', async (req, res) => {
+  if (!userId || !cartItems || cartItems.length === 0 || !address.trim() || !paymentMethod) {
+    return res.status(400).json({ success: false, message: "ข้อมูลไม่ครบถ้วน" });
+  }
+
   try {
-    const { userId, cartTotal, cartItems } = req.body;
+    // ตรวจสอบก่อนว่า user มีอยู่ในฐานข้อมูล
+    const [userExists] = await db.execute("SELECT id FROM User WHERE id = ?", [userId]);
 
-    //สร้างออเดอร์ใหม่
-    const [orderResult] = await db.query(
-      "INSERT INTO `Order` (orderedById, cartTotal, orderStatus, createdAt, updatedAt) VALUES (?, ?, 'pending', NOW(), NOW())",
-      [userId, cartTotal]
+    if (userExists.length === 0) {
+      return res.status(400).json({ success: false, message: "ไม่พบผู้ใช้ในระบบ" });
+    }
+    await db.execute("UPDATE User SET address = ? WHERE id = ?", [address.trim(), userId]);
+    const [orderResult] = await db.execute(
+      "INSERT INTO `Order` (cartTotal, orderStatus, orderedById, createdAt, updatedAt) VALUES (?, 'pending', ?, NOW(), NOW())",
+      [cartTotal, userId]
     );
     const orderId = orderResult.insertId;
-
-    // เพิ่มสินค้าไปที่ `ProductOnOrder`
+    // เพิ่มสินค้าลงในคำสั่งซื้อ
     for (const item of cartItems) {
-      await db.query(
-        "INSERT INTO ProductOnOrder (orderId, productId, count, price) VALUES (?, ?, ?, ?)",
+      await db.execute(
+        "INSERT INTO OrderOnCart (orderId, productId, count, price) VALUES (?, ?, ?, ?)",
         [orderId, item.productId, item.count, item.price]
       );
     }
-
+    // ล้างตะกร้าหลังจากสั่งซื้อ
+    await db.execute("DELETE FROM ProductOnCart WHERE cartId = (SELECT id FROM Cart WHERE orderedById = ?)", [userId]);
+    // รีเซ็ตยอดรวมของตะกร้าเป็น 0
+    await db.execute("UPDATE Cart SET cartTotal = 0 WHERE orderedById = ?", [userId]);
     res.json({ success: true, orderId });
   } catch (error) {
-    console.error("❌ Error creating order:", error);
-    res.status(500).json({ error: "Failed to create order" });
+    console.error("Error creating order:", error);
+    res.status(500).json({ success: false, message: "เกิดข้อผิดพลาดในการสร้างคำสั่งซื้อ" });
   }
 });
-
-
 
 app.listen(3003, () => console.log("Server running "));

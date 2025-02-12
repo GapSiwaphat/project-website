@@ -17,7 +17,7 @@ const InsertProduct = () => {
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    console.log("Change Detected:", name, value); 
+    console.log("Change Detected:", name, value);
 
     if (name === 'picture' && files.length > 0) {
       setProduct((prevProduct) => ({
@@ -60,10 +60,10 @@ const InsertProduct = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      console.log('✅ Product added successfully:', response.data);
+      console.log('Product added successfully:', response.data);
       setProduct({ title: '', description: '', price: '', quantity: '', picture: null, picturePreview: null });
     } catch (error) {
-      console.error('❌ Error adding product:', error);
+      console.error('Error adding product:', error);
       setErrorMessage('เกิดข้อผิดพลาดในการเพิ่มสินค้า');
     }
   };

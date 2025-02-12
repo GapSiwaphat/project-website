@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
-import logo from "../../assets/logo.png"; 
+import logo from "../../assets/logo.png";
 
 const Login = () => {
   const [formData, setFormData] = useState({

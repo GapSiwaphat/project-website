@@ -2,8 +2,6 @@ import React from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-
-// นำเข้ารูปจากโฟลเดอร์ src/assets
 import image1 from "../assets/1.png";
 import image2 from "../assets/2.png";
 

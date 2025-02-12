@@ -48,8 +48,8 @@ const router = createBrowserRouter([
     path: '/user',
     element: <ProtectedRoute element={<LayoutUser />} allowedRoles={['user']} />,
     children: [
-      { index: true, element: <HomeUser /> },
-      { path: 'product', element: <Payment /> },
+      { index: true, element: <Home /> },
+      { path: 'payment', element: <Payment /> },
       { path: 'product', element: <History />}
     ],
   },

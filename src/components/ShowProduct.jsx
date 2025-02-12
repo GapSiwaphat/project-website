@@ -36,7 +36,7 @@ const ProductUser = () => {
                 />
               </div>
               <h2 className="text-lg font-bold mt-4">{product.title}</h2>
-              
+
               <Link to="/Product">
                 <button className="mt-4 px-6 py-2 bg-black text-white font-semibold hover:bg-gray-800 transition w-full">
                   ดูเพิ่มเติม

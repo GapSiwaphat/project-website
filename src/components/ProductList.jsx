@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import { CartContext } from "../components/Cartcontext";
+import Breadcrumb from "../components/Breadcrumb";
 
 const ProductList = () => {
   const { addToCart } = useContext(CartContext);
@@ -20,7 +21,6 @@ const ProductList = () => {
         url += `?category_id=${selectedCategory}`;
       }
       const response = await axios.get(url);
-      console.log("Products Data:", response.data);
       setProducts(response.data);
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -41,9 +41,14 @@ const ProductList = () => {
   };
 
   return (
-    <div className="max-w-screen-lg mx-auto mt-48 px-6 text-center">
-      <h1 className="text-xl font-bold">รายการสินค้า</h1>
-      <p className="text-gray-500 mt-2">เลือกซื้อสินค้า</p>
+    <div className="max-w-screen-lg mx-auto mt-48 px-6">
+      <div className="mb-10 mt-10">
+        <Breadcrumb />
+      </div>
+      <div className="text-center">
+        <h1 className="text-xl font-bold">รายการสินค้า</h1>
+        <p className="text-gray-500 mt-2">เลือกซื้อสินค้า</p>
+      </div>
 
       <div className="mt-6 bg-white shadow p-4 rounded-lg">
         <div className="flex flex-wrap justify-center gap-2">
@@ -71,7 +76,7 @@ const ProductList = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6">
         {products.length === 0 ? (
-          <p className="text-gray-600 col-span-full text-lg">ไม่มีสินค้าในระบบ</p>
+          <p className="text-gray-600 col-span-full text-lg text-center">ไม่มีสินค้าในระบบ</p>
         ) : (
           products.map((product) => (
             <div key={product.id} className="bg-white shadow rounded-lg p-4 flex flex-col items-center w-full">

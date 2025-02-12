@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaFacebookF, FaTwitter, FaInstagram, FaBars, FaTimes, FaHome, FaShoppingCart } from 'react-icons/fa';
 import logo from "../assets/logo.png";
 import { motion, AnimatePresence } from 'framer-motion';
+import { CartContext } from "../components/Cartcontext";
 
 const Header = () => {
     const [menuOpen, setMenuOpen] = useState(false);
     const navigate = useNavigate();
+    const { cart } = useContext(CartContext);  
+    const cartItemCount = cart.reduce((total, item) => total + item.count, 0);
 
     const user = JSON.parse(localStorage.getItem("user"));
 
@@ -21,7 +24,6 @@ const Header = () => {
                 <div className="flex justify-center items-center flex-1 md:flex-none">
                     <img src={logo} alt="โลโก้" className="w-28 h-28" />
                 </div>
-
                 <div className={`hidden md:flex justify-start flex-1`}>
                     <ul className="flex items-center space-x-8 text-lg ml-20">
                         <li>
@@ -36,10 +38,16 @@ const Header = () => {
                                 <span>Shops</span>
                             </Link>
                         </li>
-                        <li>
+                        <li className="relative">
                             <Link to="/cart" className="flex items-center space-x-2 hover:text-blue-600">
                                 <FaShoppingCart className="text-xl" />
                                 <span>Cart</span>
+                                {/* แสดงจำนวนสินค้าในตะกร้า */}
+                                {cartItemCount > 0 && (
+                                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                        {cartItemCount}
+                                    </span>
+                                )}
                             </Link>
                         </li>
                     </ul>
@@ -101,10 +109,16 @@ const Header = () => {
                                     <span>Products</span>
                                 </Link>
                             </li>
-                            <li>
+                            <li className="relative">
                                 <Link to="/cart" className="flex items-center space-x-2 hover:text-blue-600">
                                     <FaShoppingCart className="text-xl" />
                                     <span>Cart</span>
+                                    {/* แสดงจำนวนสินค้าในตะกร้า */}
+                                    {cartItemCount > 0 && (
+                                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                            {cartItemCount}
+                                        </span>
+                                    )}
                                 </Link>
                             </li>
                         </ul>
@@ -112,7 +126,6 @@ const Header = () => {
                         <div className="mt-4">
                             {user ? (
                                 <>
-                                    <p className="text-black font-semibold">👤 {user.name}</p>
                                     <button
                                         onClick={handleLogout}
                                         className="mt-2 w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"

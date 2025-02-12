@@ -16,7 +16,6 @@ const HeaderAdmin = () => {
 
   return (
     <div className="flex">
-      {/* Sidebar (Fixed) */}
       <div className="fixed w-64 h-full bg-white text-black shadow-lg">
         <div className="p-6 text-center border-b">
           <h1 className="text-2xl font-semibold">Manage Stores</h1>
@@ -44,8 +43,6 @@ const HeaderAdmin = () => {
             </li>
           </ul>
         </nav>
-
-        {/* Logout Button */}
         <div className="absolute bottom-6 w-full px-6">
           <button
             onClick={handleLogout}
@@ -56,7 +53,6 @@ const HeaderAdmin = () => {
           </button>
         </div>
       </div>
-
       <div className="ml-64 flex-1 bg-gray-100 p-6 min-h-screen">
         <Outlet /> 
       </div>
