@@ -26,7 +26,7 @@ const ProductList = () => {
       const response = await axios.get('http://localhost:3003/categories');
       setCategories(response.data);
     } catch (error) {
-      console.error('❌ Error fetching categories:', error);
+      console.error('Error fetching categories:', error);
     }
   };
 
@@ -34,7 +34,7 @@ const ProductList = () => {
     let imageFile = null;
 
     const { value: formValues } = await Swal.fire({
-      title: "🛒 แก้ไขสินค้า",
+      title: "แก้ไขสินค้า",
       width: "550px",
       customClass: { popup: "rounded-xl shadow-lg p-6" },
       html: `
@@ -147,6 +147,30 @@ const ProductList = () => {
       Swal.fire("เกิดข้อผิดพลาด!", "ไม่สามารถแก้ไขสินค้าได้", "error");
     }
   };
+
+  const handleDelete = async (productId) => {
+    const confirmDelete = await Swal.fire({
+      title: "คุณแน่ใจหรือไม่?",
+      text: "เมื่อลบสินค้าแล้วจะไม่สามารถกู้คืนได้!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "ลบสินค้า",
+      cancelButtonText: "ยกเลิก"
+    });
+  
+    if (confirmDelete.isConfirmed) {
+      try {
+        await axios.delete(`http://localhost:3003/Product/${productId}`);
+        Swal.fire("ลบสำเร็จ!", "สินค้าถูกลบออกจากระบบ", "success");
+        fetchProducts();
+      } catch (error) {
+        Swal.fire("เกิดข้อผิดพลาด!", "ไม่สามารถลบสินค้าได้", "error");
+      }
+    }
+  };
+  
 
   return (
     <div className="max-w-screen-xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-xl">

@@ -6,10 +6,10 @@ const Breadcrumb = () => {
   const pathnames = location.pathname.split("/").filter((path) => path);
 
   return (
-    <nav className="text-lg font-semibold text-gray-700">
+    <nav className="text-lg  text-gray-500">
       <ul className="flex space-x-2">
         <li>
-          <Link to="/" className="text-blue-600 hover:underline">
+          <Link to="/" className="text-gray-700  hover:underline">
             หน้าแรก
           </Link>
         </li>

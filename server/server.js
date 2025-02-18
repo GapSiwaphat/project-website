@@ -302,7 +302,7 @@ app.get("/cart/:userId", async (req, res) => {
       );
       return res.json([]); 
     }
-    const cartId = cart[0].id;o0['']
+    const cartId = cart[0].id;0['']
     const [cartItems] = await db.query(
       "SELECT pc.productId, p.title, p.description, p.price, pc.count, p.picture FROM ProductOnCart pc JOIN Product p ON pc.productId = p.id WHERE pc.cartId = ?",
       [cartId]
